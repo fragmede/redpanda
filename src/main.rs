@@ -53,25 +53,21 @@ fn main() -> Result<()> {
         let width = rgb.width() as i32;
         let height = rgb.height() as i32;
         
-        let mut enc = encoder::Encoder::new();
-        enc.set_opt(optflags::OPTFLAGS_8BITMODE, 1)?;
-        if let Some(colors) = args.num_colors {
-            enc.set_opt(optflags::OPTFLAGS_COLORS, colors as i32)?;
-        }
+        let enc = encoder::Encoder::new()?;
+        let mut enc = if let Some(colors) = args.num_colors {
+            enc.colors(colors as i32)?
+        } else {
+            enc
+        };
 
         let output = enc.encode(
             rgb.as_raw().as_slice(),
             width,
             height,
             8,
-            None,
-        ).map_err(|e| anyhow::anyhow!("Sixel encoding failed: {:?}", e))?;
+        )?;
 
-        if output.status != status::STATUS_OK {
-            return Err(anyhow::anyhow!("Sixel encoding failed with status: {:?}", output.status));
-        }
-
-        print!("{}", String::from_utf8_lossy(&output.data));
+        print!("{}", output);
         
         if num_files > 1 {
             println!("{}", file.display());
