@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use image::io::Reader as ImageReader;
-use sixel::{encoder, optflags};
+use sixel::{encoder::{self, QuickFrame}, optflags};
 use std::path::PathBuf;
 
 /// Display images in terminal using sixel graphics
@@ -62,7 +62,7 @@ fn main() -> Result<()> {
             )).map_err(|e| anyhow::anyhow!("Failed to set color limit: {:?}", e))?;
         }
 
-        let frame = sixel::QuickFrame::new(
+        let frame = QuickFrame::new(
             rgb.as_raw().as_slice(),
             width as u32,
             height as u32,
