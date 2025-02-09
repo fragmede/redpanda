@@ -54,19 +54,20 @@ fn main() -> Result<()> {
         let height = rgb.height() as i32;
         
         let mut enc = encoder::Encoder::new()
-            .map_err(|e| anyhow::anyhow!("Failed to create encoder: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("Failed to create encoder: {:?}", e))?;
         
         if let Some(colors) = args.num_colors {
-            enc.set_color_limit(colors as i32)
-                .map_err(|e| anyhow::anyhow!("Failed to set color limit: {}", e))?;
+            enc.set_color_option(colors as i32)
+                .map_err(|e| anyhow::anyhow!("Failed to set color limit: {:?}", e))?;
         }
 
-        let output = enc.encode(
+        let output = enc.encode_pixels(
             rgb.as_raw().as_slice(),
             width,
             height,
             8,
-        ).map_err(|e| anyhow::anyhow!("Failed to encode image: {}", e))?;
+            None
+        ).map_err(|e| anyhow::anyhow!("Failed to encode image: {:?}", e))?;
 
         print!("{}", output);
         
