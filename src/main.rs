@@ -57,19 +57,20 @@ fn main() -> Result<()> {
             .map_err(|e| anyhow::anyhow!("Failed to create encoder: {:?}", e))?;
         
         if let Some(colors) = args.num_colors {
-            enc.set_color_option(&optflags::ColorOption::builtin_palette(
-                optflags::BuiltinPalette::Xterm256
+            enc.set_color_option(optflags::ColorOption::builtin_palette(
+                optflags::BuiltinPalette::XTerm256
             )).map_err(|e| anyhow::anyhow!("Failed to set color limit: {:?}", e))?;
         }
 
-        let output = enc.encode_bytes(
+        let frame = sixel::QuickFrame::new(
             rgb.as_raw().as_slice(),
-            width,
-            height,
+            width as u32,
+            height as u32,
             8,
-        ).map_err(|e| anyhow::anyhow!("Failed to encode image: {:?}", e))?;
+        );
 
-        print!("{}", output);
+        enc.encode_bytes(frame)
+            .map_err(|e| anyhow::anyhow!("Failed to encode image: {:?}", e))?;
         
         if num_files > 1 {
             println!("{}", file.display());
