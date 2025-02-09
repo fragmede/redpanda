@@ -27,6 +27,7 @@ struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
     
+    let num_files = args.files.len();
     for file in args.files {
         let img = ImageReader::open(&file)
             .with_context(|| format!("Failed to open {}", file.display()))?
@@ -46,10 +47,9 @@ fn main() -> Result<()> {
             img
         };
 
-        // Convert to RGB
-        let rgb = resized.to_rgb8();
+        // Convert to RGB and start sixel output
+        let _rgb = resized.to_rgb8();
         
-        // Start sixel output
         print!("\x1BP");
         
         // TODO: Add actual sixel conversion and output
@@ -59,7 +59,7 @@ fn main() -> Result<()> {
         // End sixel output
         print!("\x1B\\");
         
-        if args.files.len() > 1 {
+        if num_files > 1 {
             println!("{}", file.display());
         }
     }
