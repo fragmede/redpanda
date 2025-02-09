@@ -57,11 +57,12 @@ fn main() -> Result<()> {
             .map_err(|e| anyhow::anyhow!("Failed to create encoder: {:?}", e))?;
         
         if let Some(colors) = args.num_colors {
-            enc.set_color_option(&optflags::ColorOption::Color8(colors as i32))
-                .map_err(|e| anyhow::anyhow!("Failed to set color limit: {:?}", e))?;
+            enc.set_color_option(&optflags::ColorOption::builtin_palette(
+                optflags::BuiltinPalette::Xterm256
+            )).map_err(|e| anyhow::anyhow!("Failed to set color limit: {:?}", e))?;
         }
 
-        let output = enc.encode_raw(
+        let output = enc.encode_bytes(
             rgb.as_raw().as_slice(),
             width,
             height,
