@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use image::io::Reader as ImageReader;
-use sixel::{encoder, optflags, status};
+use sixel::encoder;
 use std::path::PathBuf;
 
 /// Display images in terminal using sixel graphics
@@ -53,19 +53,20 @@ fn main() -> Result<()> {
         let width = rgb.width() as i32;
         let height = rgb.height() as i32;
         
-        let enc = encoder::Encoder::new()?;
-        let mut enc = if let Some(colors) = args.num_colors {
-            enc.colors(colors as i32)?
-        } else {
-            enc
-        };
+        let mut enc = encoder::Encoder::new()
+            .map_err(|e| anyhow::anyhow!("Failed to create encoder: {}", e))?;
+        
+        if let Some(colors) = args.num_colors {
+            enc.set_color_limit(colors as i32)
+                .map_err(|e| anyhow::anyhow!("Failed to set color limit: {}", e))?;
+        }
 
         let output = enc.encode(
             rgb.as_raw().as_slice(),
             width,
             height,
             8,
-        )?;
+        ).map_err(|e| anyhow::anyhow!("Failed to encode image: {}", e))?;
 
         print!("{}", output);
         
