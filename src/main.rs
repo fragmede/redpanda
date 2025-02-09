@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use image::io::Reader as ImageReader;
+use sixel::{encoder, optflags, status};
 use std::path::PathBuf;
 
 /// Display images in terminal using sixel graphics
@@ -47,17 +48,30 @@ fn main() -> Result<()> {
             img
         };
 
-        // Convert to RGB and start sixel output
-        let _rgb = resized.to_rgb8();
+        // Convert to RGB and encode as sixel
+        let rgb = resized.to_rgb8();
+        let width = rgb.width() as i32;
+        let height = rgb.height() as i32;
         
-        print!("\x1BP");
-        
-        // TODO: Add actual sixel conversion and output
-        // This is where we'd convert the RGB data to sixel format
-        // For now this is a placeholder that needs implementation
-        
-        // End sixel output
-        print!("\x1B\\");
+        let mut enc = encoder::Encoder::new();
+        enc.set_opt(optflags::OPTFLAGS_8BITMODE, 1)?;
+        if let Some(colors) = args.num_colors {
+            enc.set_opt(optflags::OPTFLAGS_COLORS, colors as i32)?;
+        }
+
+        let output = enc.encode(
+            rgb.as_raw().as_slice(),
+            width,
+            height,
+            8,
+            None,
+        ).map_err(|e| anyhow::anyhow!("Sixel encoding failed: {:?}", e))?;
+
+        if output.status != status::STATUS_OK {
+            return Err(anyhow::anyhow!("Sixel encoding failed with status: {:?}", output.status));
+        }
+
+        print!("{}", String::from_utf8_lossy(&output.data));
         
         if num_files > 1 {
             println!("{}", file.display());
