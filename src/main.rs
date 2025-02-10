@@ -63,13 +63,12 @@ fn main() -> Result<()> {
         }
 
         let frame = QuickFrame {
-            pixels: rgb.as_raw().as_slice(),
-            width: width as u32,
-            height: height as u32,
-            depth: 8,
+            pixels: rgb.as_raw().to_vec(),
+            width: width as usize,
+            height: height as usize,
         };
 
-        enc.encode_bytes(&frame)
+        enc.encode_bytes(frame)
             .map_err(|e| anyhow::anyhow!("Failed to encode image: {:?}", e))?;
         
         if num_files > 1 {
