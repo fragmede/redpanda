@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use image::io::Reader as ImageReader;
-use sixel::{encoder::{self, QuickFrame}, optflags};
+use sixel::{encoder, optflags, pixelformat};
 use std::path::PathBuf;
 
 /// Display images in terminal using sixel graphics
@@ -62,13 +62,13 @@ fn main() -> Result<()> {
             )).map_err(|e| anyhow::anyhow!("Failed to set color limit: {:?}", e))?;
         }
 
-        let frame = encoder::Frame::from_rgb(
-            width as usize,
-            height as usize,
+        let output = enc.encode_pixels(
             rgb.as_raw(),
-        );
-
-        enc.encode_frame(&frame)
+            width,
+            height,
+            pixelformat::PixelFormat::RGB8,
+            None
+        )
             .map_err(|e| anyhow::anyhow!("Failed to encode image: {:?}", e))?;
         
         if num_files > 1 {
