@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use image::io::Reader as ImageReader;
-use sixel::{encoder, optflags, QuickFrame};
+use sixel::{encoder::{self, QuickFrame}, optflags};
 use std::path::PathBuf;
 
 /// Display images in terminal using sixel graphics
