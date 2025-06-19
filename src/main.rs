@@ -21,13 +21,13 @@ struct Args {
     max_width: u32,
 
     /// Maximum image height
-    #[arg(long, default_value = "480")] 
+    #[arg(long, default_value = "480")]
     max_height: u32,
 }
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    
+
     let num_files = args.files.len();
     for file in args.files {
         let img = ImageReader::open(&file)
@@ -48,17 +48,39 @@ fn main() -> Result<()> {
             img
         };
 
-        // Convert to sixel format and print
-        let rgba_image = resized.into_rgba8();
+        // Handle transparency by compositing onto terminal background color
+        let rgba_image = resized.to_rgba8();
+        let mut rgb_image = image::ImageBuffer::new(rgba_image.width(), rgba_image.height());
+        let background_color = image::Rgb([0u8, 0u8, 0u8]); // Black background
+
+        for (x, y, pixel) in rgba_image.enumerate_pixels() {
+            let rgba = pixel.0;
+            let alpha = rgba[3] as f32 / 255.0;
+
+            if alpha == 0.0 {
+                // Fully transparent - use background color
+                rgb_image.put_pixel(x, y, background_color);
+            } else if alpha == 1.0 {
+                // Fully opaque
+                rgb_image.put_pixel(x, y, image::Rgb([rgba[0], rgba[1], rgba[2]]));
+            } else {
+                // Semi-transparent - blend with background
+                let blended_r = ((1.0 - alpha) * background_color[0] as f32 + alpha * rgba[0] as f32) as u8;
+                let blended_g = ((1.0 - alpha) * background_color[1] as f32 + alpha * rgba[1] as f32) as u8;
+                let blended_b = ((1.0 - alpha) * background_color[2] as f32 + alpha * rgba[2] as f32) as u8;
+                rgb_image.put_pixel(x, y, image::Rgb([blended_r, blended_g, blended_b]));
+            }
+        }
+
         let sixel_data = sixel_bytes::sixel_string(
-            rgba_image.as_raw(),
-            rgba_image.width() as i32,
-            rgba_image.height() as i32,
-            sixel_bytes::PixelFormat::RGBA8888,
+            rgb_image.as_raw(),
+            rgb_image.width() as i32,
+            rgb_image.height() as i32,
+            sixel_bytes::PixelFormat::RGB888,
         ).map_err(|e| anyhow::anyhow!("Failed to encode image: {:?}", e))?;
-        
+
         print!("{}", sixel_data);
-        
+
         if num_files > 1 {
             println!("{}", file.display());
         }
