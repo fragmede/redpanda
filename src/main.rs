@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use image::io::Reader as ImageReader;
 use sixel_bytes;
+use std::fs;
 use std::path::PathBuf;
 
 /// Display images in terminal using sixel graphics
@@ -25,11 +26,31 @@ struct Args {
     max_height: u32,
 }
 
+fn is_text_file(path: &PathBuf) -> Result<bool> {
+    let content = fs::read(path)?;
+    
+    // Check if file is likely text by looking for null bytes
+    // Text files typically don't contain null bytes
+    Ok(!content.contains(&0))
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
 
     let num_files = args.files.len();
     for file in args.files {
+        // Check if this is a text file
+        if is_text_file(&file).unwrap_or(false) {
+            let content = fs::read_to_string(&file)
+                .with_context(|| format!("Failed to read text file {}", file.display()))?;
+            print!("{}", content);
+            
+            if num_files > 1 {
+                println!("{}", file.display());
+            }
+            continue;
+        }
+
         let img = ImageReader::open(&file)
             .with_context(|| format!("Failed to open {}", file.display()))?
             .decode()
