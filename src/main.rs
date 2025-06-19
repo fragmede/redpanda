@@ -62,7 +62,11 @@ fn main() -> Result<()> {
             )).map_err(|e| anyhow::anyhow!("Failed to set color limit: {:?}", e))?;
         }
 
-        let frame = QuickFrame::new(rgb.as_raw(), width, height);
+        let frame = QuickFrame {
+            pixels: rgb.as_raw(),
+            width,
+            height,
+        };
         enc.encode_bytes(frame)
             .map_err(|e| anyhow::anyhow!("Failed to encode image: {:?}", e))?;
         
