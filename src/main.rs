@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use image::io::Reader as ImageReader;
-use sixel::{encoder, optflags};
+use sixel_bytes;
 use std::path::PathBuf;
 
 /// Display images in terminal using sixel graphics
@@ -48,22 +48,16 @@ fn main() -> Result<()> {
             img
         };
 
-        // Convert to RGB and encode as sixel
-        let rgb = resized.to_rgb8();
-        let width = rgb.width() as i32;
-        let height = rgb.height() as i32;
+        // Convert to sixel format and print
+        let rgba_image = resized.into_rgba8();
+        let sixel_data = sixel_bytes::sixel_string(
+            rgba_image.as_raw(),
+            rgba_image.width() as i32,
+            rgba_image.height() as i32,
+            sixel_bytes::PixelFormat::RGBA8888,
+        ).map_err(|e| anyhow::anyhow!("Failed to encode image: {:?}", e))?;
         
-        let mut enc = encoder::Encoder::new()
-            .map_err(|e| anyhow::anyhow!("Failed to create encoder: {:?}", e))?;
-        
-        if let Some(colors) = args.num_colors {
-            enc.set_color_option(optflags::ColorOption::builtin_palette(
-                optflags::BuiltinPalette::XTerm256
-            )).map_err(|e| anyhow::anyhow!("Failed to set color limit: {:?}", e))?;
-        }
-
-        enc.encode(rgb.as_raw(), width, height, encoder::PixelFormat::RGB888)
-            .map_err(|e| anyhow::anyhow!("Failed to encode image: {:?}", e))?;
+        print!("{}", sixel_data);
         
         if num_files > 1 {
             println!("{}", file.display());

@@ -9,5 +9,4 @@ description = "Display images in terminal using sixel graphics"
 image = "0.24"
 clap = { version = "4.4", features = ["derive"] }
 anyhow = "1.0"
-sixel = "0.3.2"
-sixel-sys = "0.3.1"
+sixel-bytes = "0.1"
