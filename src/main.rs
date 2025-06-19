@@ -62,7 +62,8 @@ fn main() -> Result<()> {
             )).map_err(|e| anyhow::anyhow!("Failed to set color limit: {:?}", e))?;
         }
 
-        enc.encode_bytes(rgb.as_raw())
+        let frame = QuickFrame::new(rgb.as_raw(), width, height);
+        enc.encode_bytes(frame)
             .map_err(|e| anyhow::anyhow!("Failed to encode image: {:?}", e))?;
         
         if num_files > 1 {
