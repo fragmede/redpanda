@@ -205,6 +205,7 @@ fn write_kitty_image(out: &mut impl Write, img: &image::DynamicImage) -> Result<
         }
     }
 
+    writeln!(out)?;
     out.flush()?;
     Ok(())
 }
