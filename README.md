@@ -1,15 +1,28 @@
 # redpanda
 
-Display images and text files in the terminal using the [Kitty graphics protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/).
+A better cat(1)!
 
-Works with terminals that support kitty graphics, including [Ghostty](https://ghostty.org/) and [Kitty](https://sw.kovidgoyal.net/kitty/).
+Does the usual cat thing of displaying text, but if it's an image file, then it'll use the Kitty graphics protocol, supported by Ghostty and other modern terminals, to display the jpg/png/gif to the screen.
+
+[Kitty graphics protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/).
+
+## Building
+
+```bash
+cargo build --release
+```
+The binary will be at `target/release/redpanda`.
+
+## Installing
+cp target/release/redpanda ~/bin/rp
+alias cat=~/bin/rp into your .bashrc/whatever
 
 ## Usage
 
 ```bash
-redpanda image.png
-redpanda photo.jpg diagram.svg
-redpanda notes.txt          # text files are printed directly
+rp image.png
+rp photo.jpg diagram.svg
+rp notes.txt # text files are printed directly
 ```
 
 ### Options
@@ -18,14 +31,6 @@ redpanda notes.txt          # text files are printed directly
 |------|-------------|---------|
 | `--max-width` | Maximum image width in pixels | 800 |
 | `--max-height` | Maximum image height in pixels | 480 |
-
-## Building
-
-```bash
-cargo build --release
-```
-
-The binary will be at `target/release/redpanda`.
 
 ## Features
 
