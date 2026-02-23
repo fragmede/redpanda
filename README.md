@@ -14,8 +14,14 @@ cargo build --release
 The binary will be at `target/release/redpanda`.
 
 ## Installing
+```bash
 cp target/release/redpanda \~/bin/rp
-alias cat=\~/bin/rp into your .bashrc/whatever
+```
+Then:
+``` bash
+alias cat=\~/bin/rp
+```
+into your .bashrc/whatever
 
 ## Usage
 
