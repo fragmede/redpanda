@@ -14,14 +14,29 @@ cargo build --release
 The binary will be at `target/release/redpanda`.
 
 ## Installing
+
+### Homebrew (macOS)
+
 ```bash
-cp target/release/redpanda \~/bin/rp
+brew install --formula https://raw.githubusercontent.com/fragmede/redpanda/main/Formula/rp.rb
 ```
-Then:
-``` bash
-alias cat=\~/bin/rp
+
+Or as a tap:
+```bash
+brew tap fragmede/redpanda https://github.com/fragmede/redpanda
+brew install fragmede/redpanda/rp
 ```
-into your .bashrc/whatever
+
+### Manual
+
+```bash
+cp target/release/redpanda ~/bin/rp
+```
+
+Then add to your `.bashrc` / `.zshrc`:
+```bash
+alias cat=~/bin/rp
+```
 
 ## Usage
 
@@ -32,6 +47,21 @@ rp notes.txt # text files are printed directly
 ```
 
 ### Options
+
+Supports all standard `cat(1)` flags:
+
+| Flag | Description |
+|------|-------------|
+| `-b` | Number non-blank output lines |
+| `-e` | Display non-printing characters and `$` at end of each line |
+| `-l` | Set an exclusive advisory lock on stdout |
+| `-n` | Number all output lines |
+| `-s` | Squeeze multiple adjacent empty lines |
+| `-t` | Display non-printing characters and tabs as `^I` |
+| `-u` | Disable output buffering |
+| `-v` | Display non-printing characters visibly |
+
+Plus image-specific options:
 
 | Flag | Description | Default |
 |------|-------------|---------|
