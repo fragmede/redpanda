@@ -1,6 +1,6 @@
 # redpanda
 
-A better cat(1)!
+My version of cat(1)!
 
 Does the usual cat thing of displaying text, but if it's an image file, then it'll use the Kitty graphics protocol, supported by Ghostty and other modern terminals, to display the jpg/png/gif to the screen.
 
@@ -14,8 +14,8 @@ cargo build --release
 The binary will be at `target/release/redpanda`.
 
 ## Installing
-cp target/release/redpanda ~/bin/rp
-alias cat=~/bin/rp into your .bashrc/whatever
+cp target/release/redpanda \~/bin/rp
+alias cat=\~/bin/rp into your .bashrc/whatever
 
 ## Usage
 
