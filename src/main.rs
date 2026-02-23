@@ -1,21 +1,18 @@
 use anyhow::{Context, Result};
+use base64::Engine;
 use clap::Parser;
 use image::io::Reader as ImageReader;
-use sixel_bytes;
 use std::fs;
+use std::io::{self, Cursor, Write};
 use std::path::PathBuf;
 
-/// Display images in terminal using sixel graphics
+/// Display images in terminal using kitty graphics protocol
 #[derive(Parser)]
 #[command(author, version, about)]
 struct Args {
     /// Image files to display
     #[arg(required = true)]
     files: Vec<PathBuf>,
-
-    /// Force specific number of colors
-    #[arg(short = 'n', long = "num-colors")]
-    num_colors: Option<u32>,
 
     /// Maximum image width
     #[arg(long, default_value = "800")]
@@ -28,10 +25,44 @@ struct Args {
 
 fn is_text_file(path: &PathBuf) -> Result<bool> {
     let content = fs::read(path)?;
-    
-    // Check if file is likely text by looking for null bytes
-    // Text files typically don't contain null bytes
     Ok(!content.contains(&0))
+}
+
+/// Write an image to stdout using the kitty graphics protocol.
+/// The image is PNG-encoded, base64'd, and sent in chunks.
+fn write_kitty_image(img: &image::DynamicImage) -> Result<()> {
+    let mut png_data = Vec::new();
+    img.write_to(&mut Cursor::new(&mut png_data), image::ImageOutputFormat::Png)
+        .context("Failed to encode image as PNG")?;
+
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&png_data);
+
+    let stdout = io::stdout();
+    let mut out = stdout.lock();
+
+    const CHUNK_SIZE: usize = 4096;
+    let chunks: Vec<&str> = b64.as_bytes().chunks(CHUNK_SIZE).map(|c| {
+        std::str::from_utf8(c).unwrap()
+    }).collect();
+
+    for (i, chunk) in chunks.iter().enumerate() {
+        let is_last = i == chunks.len() - 1;
+        if i == 0 {
+            // First chunk: include format and action params
+            // a=T: transmit and display, f=100: PNG, t=d: direct data
+            write!(out, "\x1b_Ga=T,f=100,t=d,m={};{}\x1b\\",
+                if is_last { 0 } else { 1 },
+                chunk)?;
+        } else {
+            // Continuation chunk
+            write!(out, "\x1b_Gm={};{}\x1b\\",
+                if is_last { 0 } else { 1 },
+                chunk)?;
+        }
+    }
+
+    out.flush()?;
+    Ok(())
 }
 
 fn main() -> Result<()> {
@@ -39,12 +70,11 @@ fn main() -> Result<()> {
 
     let num_files = args.files.len();
     for file in args.files {
-        // Check if this is a text file
         if is_text_file(&file).unwrap_or(false) {
             let content = fs::read_to_string(&file)
                 .with_context(|| format!("Failed to read text file {}", file.display()))?;
             print!("{}", content);
-            
+
             if num_files > 1 {
                 println!("{}", file.display());
             }
@@ -56,11 +86,10 @@ fn main() -> Result<()> {
             .decode()
             .with_context(|| format!("Failed to decode {}", file.display()))?;
 
-        // Resize image if needed while maintaining aspect ratio
         let resized = if img.width() > args.max_width || img.height() > args.max_height {
             let ratio = f32::min(
                 args.max_width as f32 / img.width() as f32,
-                args.max_height as f32 / img.height() as f32
+                args.max_height as f32 / img.height() as f32,
             );
             let new_width = (img.width() as f32 * ratio) as u32;
             let new_height = (img.height() as f32 * ratio) as u32;
@@ -69,38 +98,7 @@ fn main() -> Result<()> {
             img
         };
 
-        // Handle transparency by compositing onto terminal background color
-        let rgba_image = resized.to_rgba8();
-        let mut rgb_image = image::ImageBuffer::new(rgba_image.width(), rgba_image.height());
-        let background_color = image::Rgb([0u8, 0u8, 0u8]); // Black background
-
-        for (x, y, pixel) in rgba_image.enumerate_pixels() {
-            let rgba = pixel.0;
-            let alpha = rgba[3] as f32 / 255.0;
-
-            if alpha == 0.0 {
-                // Fully transparent - use background color
-                rgb_image.put_pixel(x, y, background_color);
-            } else if alpha == 1.0 {
-                // Fully opaque
-                rgb_image.put_pixel(x, y, image::Rgb([rgba[0], rgba[1], rgba[2]]));
-            } else {
-                // Semi-transparent - blend with background
-                let blended_r = ((1.0 - alpha) * background_color[0] as f32 + alpha * rgba[0] as f32) as u8;
-                let blended_g = ((1.0 - alpha) * background_color[1] as f32 + alpha * rgba[1] as f32) as u8;
-                let blended_b = ((1.0 - alpha) * background_color[2] as f32 + alpha * rgba[2] as f32) as u8;
-                rgb_image.put_pixel(x, y, image::Rgb([blended_r, blended_g, blended_b]));
-            }
-        }
-
-        let sixel_data = sixel_bytes::sixel_string(
-            rgb_image.as_raw(),
-            rgb_image.width() as i32,
-            rgb_image.height() as i32,
-            sixel_bytes::PixelFormat::RGB888,
-        ).map_err(|e| anyhow::anyhow!("Failed to encode image: {:?}", e))?;
-
-        print!("{}", sixel_data);
+        write_kitty_image(&resized)?;
 
         if num_files > 1 {
             println!("{}", file.display());
